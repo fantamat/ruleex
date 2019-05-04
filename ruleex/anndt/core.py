@@ -8,9 +8,6 @@ from ruleex.tree.rule import AxisRule, Leaf
 from ruleex.tree.ruletree import RuleTree
 import numpy as np
 
-from ruleex.utils import fill_default_params
-
-
 INF = "inf"
 TIME = "time"
 GENERATED_SAMPLES = "generated_samples" # dictionary node->number of generated samples
@@ -140,7 +137,7 @@ def anndt(model_fun, x, params, MeasureClass=None, stat_test=None, sampler=None,
     """
 
     # fill required variables
-    fill_default_params(DEFAULT_PARAMS, params)
+    params = dict(DEFAULT_PARAMS, **params)
     if not sampler:
         sampler = NormalSampler(x)
     if not MeasureClass:
