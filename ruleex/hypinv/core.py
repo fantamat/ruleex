@@ -258,6 +258,8 @@ def hypinv(model, x, params=dict(), input_range=None):
             cm = confmat(model_class, tree_class, num_classes)
             for i in range(num_classes):
                 cm[i, i] = 0
+            if np.sum(cm) == 0:
+                return None
             max_index = np.argmax(cm)
             r = np.random.randint(0,np.max(cm))
             inds = list()
@@ -273,10 +275,10 @@ def hypinv(model, x, params=dict(), input_range=None):
             return core(X, model_y, tree_classification)
         else:
             def interval_random(r, i):
-                return (i[:, 1] - i[:, 0]) * r + i[:, 0]
+                return (i[1, :] - i[0, :]) * r + i[0, :]
             for _ in range(1000):  # maximum of 100 000 points will be generated
                 # generate 100 random points
-                random_points = np.apply_along_axis(interval_random, np.random.rand(100, len(inputRange)), inputRange)
+                random_points = np.apply_along_axis(interval_random, 1, np.random.rand(100, len(inputRange[0])), inputRange)
                 model_classification = np.argmax(model.eval(random_points), 1)
                 tree_classification = output.eval_all(random_points)
                 # first badly classified point is chosen as initial
@@ -285,7 +287,7 @@ def hypinv(model, x, params=dict(), input_range=None):
                     return core_output
 
     rule_counter = 0
-    if not input_range:
+    if input_range is None:
         input_range = np.array([np.min(x, 0), np.max(x, 0)])
         input_range = np.transpose(input_range)
     fill_default_prams(params)
@@ -322,7 +324,7 @@ def hypinv(model, x, params=dict(), input_range=None):
         if fidelity > params[THRESH_FIDELITY]:
             print("[hypinv]: Fidelity extends desired threshold.")
             break
-        x1, model_x1_classification, tree_x1_classification = choose_x1(output, x, input_range, model, model_labels, params)
+        x1, model_x1_classification, tree_x1_classification = choose_x1(output, x, model, input_range, model_labels, params)
         if isinstance(x1, type(None)):
             print("[hypinv]: There is no more miss classified point so the algorithm will be stopped.")
             break

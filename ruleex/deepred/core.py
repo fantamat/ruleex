@@ -8,8 +8,6 @@ import time
 from ruleex.tree.utils import sklearndt_to_ruletree
 import numpy as np
 
-from ruleex.utils import fill_default_params
-
 ONE_CLASS_ON_LEAF = "one_class_on_leafs"
 DEFAULT_ONE_CLASS_ON_LEAF = True
 INITIAL_DT_TRAIN_PARAMS = "initial_dt_train_params"
@@ -173,8 +171,7 @@ def deepred(layers_activations, params):
                     accuracy
                 ))
     # the algorithm
-
-    fill_default_params(DEFAULT_PARAMS, params)
+    params = dict(DEFAULT_PARAMS, **params)
     lastLayerIndex = len(layers_activations) - 1
     dt_base = tree.DecisionTreeClassifier(**params[INITIAL_DT_TRAIN_PARAMS])
     if params[BUILD_FIRST]:
