@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='ruleex',
-    version='0.3.4',
+    version='0.4.0',
     description='Rule extraction methods from neural networks',
     long_description=long_description,
     long_description_content_type="text/markdown",

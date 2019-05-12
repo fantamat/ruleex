@@ -12,14 +12,14 @@ class DataForBoundary(Data):
     def set_placeholders(self, pl_list):
         self.output = pl_list[0]
 
-    def get_next_batch(self):
-        return {self.output: self.desired_output}
+    def get_batches(self):
+        yield {self.output: self.desired_output}
 
     def accumulate_grad(self):
         return False
 
-    def get_next_dev_batch(self):
-        return {self.output: self.desired_output}
+    def get_dev_batches(self):
+        yield {self.output: self.desired_output}
 
     def train_ended(self):
         pass
