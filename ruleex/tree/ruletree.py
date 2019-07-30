@@ -362,9 +362,9 @@ class RuleTree:
                 expanded_rules.append(act_expanded_rule + [rule])
             else:
                 if rule.false_branch:
-                    get_all_expanded_rules_rek(rule.false_branch, act_expanded_rule + [rule], expanded_rules)
+                    get_all_expanded_rules_rek(rule.false_branch, act_expanded_rule + [(False, rule)], expanded_rules)
                 if rule.true_branch:
-                    get_all_expanded_rules_rek(rule.true_branch, act_expanded_rule + [rule], expanded_rules)
+                    get_all_expanded_rules_rek(rule.true_branch, act_expanded_rule + [(True, rule)], expanded_rules)
 
         output = list()
         get_all_expanded_rules_rek(self.root, [], output)
@@ -613,7 +613,7 @@ class RuleTree:
                     actRule.class_hits = [0] * self.num_of_classes
                     visited_rules.add(actRule)
                 actRule.class_hits[label] += 1
-                actRule = actRule.getNext(x[i])
+                actRule = actRule.get_next(x[i])
         if remove_redundant:
             self.remove_unvisited(visited_rules)
         return self
