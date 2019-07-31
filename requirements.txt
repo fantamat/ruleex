@@ -1,3 +1,5 @@
 graphviz
 sklearn
 gtrain
+numpy
+tensorflow
