@@ -7,7 +7,7 @@ class Sampler(ABC):
     """
     Abstraction of the sampler for ANN-DT algorithm
     """
-    def get_default_params(self):
+    def get_default_params(self, x):
         """
         :return: default params for given sampler
         """

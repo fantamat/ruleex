@@ -14,7 +14,6 @@ class RuleTree:
         The usage is harder. However, it allows user to optimize algorithms made on the graph
     """
     __slots__ = ("root",
-                 "terms",
                  "num_of_classes",
                  "input_size",
                  "type",
