@@ -137,6 +137,7 @@ def anndt(model_fun, x, params, MeasureClass=None, stat_test=None, sampler=None,
     """
 
     # fill required variables
+    out_params = params
     params = dict(DEFAULT_PARAMS, **params)
     if not sampler:
         sampler = NormalSampler(x)
@@ -147,7 +148,6 @@ def anndt(model_fun, x, params, MeasureClass=None, stat_test=None, sampler=None,
     if init_restrictions is None:
         init_restrictions = np.array([[-np.inf, np.inf] for i in x[0]])
     init_restrictions = init_restrictions.astype(np.float)
-    params[INF] = dict()
     y = model_fun(x)
     attr_num = x.shape[1]
     class_num = y.shape[1]
@@ -405,6 +405,6 @@ def anndt(model_fun, x, params, MeasureClass=None, stat_test=None, sampler=None,
     rt.type = "DT build by ANN-DT"
     rt = rt.delete_redundancy()
     inf[TIME] = time.time()-tic
-    params[INF] = inf
+    out_params[INF] = inf
     return rt
 

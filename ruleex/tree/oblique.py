@@ -6,8 +6,9 @@ from .ruletree import RuleTree
 from .rule import LinearRule
 from .build import get_leaf
 from gtrain.model import Model
-from gtrain.data import AllData
+from gtrain.data import AllData, BatchedData
 from gtrain import gtrain
+from gtrain.utils import confmat
 
 
 class LinearModel(Model):
@@ -36,19 +37,19 @@ class LinearModel(Model):
             raise Exception("Attributes a and b of a object of the LinearModel class must be initialized "
                             "before running build method or gtrain function!")
         self.tf_a = tf.Variable(self.a, name="a")
-        self.tf_b = tf.Variable(self.b, name="b")
+        self.tf_b = tf.reshape(tf.Variable(self.b, dtype=tf.float64, name="b"), (1,))
         self.x = tf.placeholder(tf.float64, shape=(None, self.input_size), name="input")
         self.labels = tf.placeholder(tf.int64, shape=(None, 1), name="labels")
 
         #
         self.count = tf.cast(tf.size(self.labels), tf.float64)
         s_t = tf.sigmoid(tf.nn.xw_plus_b(self.x, self.tf_a, self.tf_b))
-        s_f = 1 - s_t
+        s_f = 1. - s_t
         sum_t = tf.reduce_sum(s_t) + self.class_num
         sum_f = tf.reduce_sum(s_f) + self.class_num
         zeros = tf.zeros_like(s_t)
-        sum_t_j = [tf.reduce_sum(s_t.where_v2(self.labels == j, s_t, zeros)) + 1 for j in range(self.class_num)]
-        sum_f_j = [tf.reduce_sum(s_t.where_v2(self.labels == j, s_f, zeros)) + 1 for j in range(self.class_num)]
+        sum_t_j = tf.stack([tf.reduce_sum(tf.where(self.labels == j, s_t, zeros)) + 1 for j in range(self.class_num)])
+        sum_f_j = tf.stack([tf.reduce_sum(tf.where(self.labels == j, s_f, zeros)) + 1 for j in range(self.class_num)])
 
         # absolute values of a sums to one
         absone = (1 - tf.reduce_sum(tf.abs(self.tf_a)))**2 / 2 / self.input_size
@@ -60,22 +61,28 @@ class LinearModel(Model):
 
         # number of samples on both sides of hyperplane are balanced
         sides_balanced = (sum_t - sum_f)**2 / 2 / self.count
-        sides_balanced_coeff = absone_coeff * (np.log2(self.class_num) - 1)
+        sides_balanced_coeff = absone_coeff * (np.log2(self.class_num) - 1) / 100000
 
         # impurity
         if self.impurity_mode == "gini":
             impurity = (sum_t - tf.reduce_sum(sum_t_j)**2) / sum_t + \
                        (sum_f - tf.reduce_sum(sum_f_j) ** 2) / sum_f
         else:
-            impurity = sum_t * (sum_t * tf.log(sum_t) - tf.reduce_sum(sum_t_j * tf.log(sum_t_j))) + \
-                       sum_f * (sum_f * tf.log(sum_f) - tf.reduce_sum(sum_f_j * tf.log(sum_f_j)))
+            impurity = (- tf.reduce_sum(sum_t_j * tf.log(sum_t_j / sum_t))) + \
+                       (- tf.reduce_sum(sum_f_j * tf.log(sum_f_j / sum_f)))
+
+                # old too big
+                #sum_t * (sum_t * tf.log(sum_t) - tf.reduce_sum(sum_t_j * tf.log(sum_t_j))) + \
+                #       sum_f * (sum_f * tf.log(sum_f) - tf.reduce_sum(sum_f_j * tf.log(sum_f_j)))
         self.impurity_sum = impurity
         impurity = impurity / self.count
         impurity_coeff = self.p / np.log(self.class_num)
 
         #loss
-        self.loss = absone_coeff * absone + zeroone_coeff * zeroone + sides_balanced_coeff * sides_balanced + \
-                    impurity_coeff * impurity
+        self.loss = (#absone_coeff * absone + # remake to have maximal coeff with abs value 1
+                    #zeroone_coeff * zeroone +
+                    #sides_balanced_coeff * sides_balanced +
+                    impurity_coeff * impurity)
 
 
 
@@ -154,10 +161,13 @@ class ODTLinearOptimizer:
         self.find_optimal_counter += 1
         self.model.a = a
         self.model.b = b
+        labels = labels.reshape((len(labels),1))
         data = AllData(x, labels, x, labels)
         if self.out_dir is not None:
             kwargs["out_dir"] = self.get_current_out_dir()
         gtrain(self.model, data, dtype=tf.float64, **kwargs)
+        print("a,b diff:")
+        print((self.model.a-a).flatten(), self.model.b-b)
         return self.model.a, self.model.b
 
 
@@ -166,7 +176,7 @@ def build_odt(x, labels,
               threshold_value=0.01,
               max_depth=5,
               min_samples=1,
-              min_split_fraction: float = 0.98,
+              min_split_fraction: float = 0.02,
               impurity="entropy",
               p=0.5,
               out_dir=None):
@@ -181,6 +191,11 @@ def build_odt(x, labels,
     :param threshold_value: threshold of the coefficient that is considered as zero
     :return: oblique RuleTree
     """
+    gtrain_params = {
+        "num_steps": 10000,
+        "evaluate_every": 1000,
+        "checkpoint_every": 1000,
+    }
     num_class = max(labels) + 1
     input_size = x.shape[1]
     output = RuleTree(num_class, input_size)
@@ -202,21 +217,25 @@ def build_odt(x, labels,
             print("[ODT]: Node contains less than min_samples={}.".format(min_samples))
             return get_leaf(labels, num_class)
 
-        a, b, = np.random.randn(input_size), 0
+        a, b, = np.random.randn(input_size, 1), 0
         z, z_old = input_size, input_size + 1
         optimizer.next_node(depth)
         while z != z_old:
-            a, b = optimizer.find_optimal(x, labels, a, b)
+            a, b = optimizer.find_optimal(x, labels, a, b, **gtrain_params)
             threshold = get_threshold(a, z)
-            a = [ai if abs(ai) > threshold else 0 for ai in a]
+            a[np.abs(a) <= threshold] = 0
             z_old = z
             z = np.sum(a==0)
-        node = LinearRule(a, b)
-        filter = node.eval_all(x)
+            node = LinearRule(a.flatten(), - b[0])
+            filter = node.eval_all(x)
+            _, c0 = np.unique(labels[filter], return_counts=True)
+            _, c1 = np.unique(labels[~filter], return_counts=True)
+            print("data division {}".format(np.mean(filter)))
+            print("branches occupation True: {} False {}".format(c0, c1))
         if np.all(filter) or not np.any(filter):
             print("[ODT]: Split do not divide training data.")
             return get_leaf(labels, num_class)
-        if max(np.mean(filter), 1 - np.mean(filter)) > min_split_fraction:
+        if min(np.mean(filter), 1 - np.mean(filter)) < min_split_fraction:
             print("[ODT]: Split divide training data in less than min_plit_fraction={}!".format(min_split_fraction))
             return get_leaf(labels, num_class)
         node.true_branch = __build_odt_node(x[filter], labels[filter], depth + 1)

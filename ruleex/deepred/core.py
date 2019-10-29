@@ -171,6 +171,7 @@ def deepred(layers_activations, params):
                     accuracy
                 ))
     # the algorithm
+    out_params = params
     params = dict(DEFAULT_PARAMS, **params)
     lastLayerIndex = len(layers_activations) - 1
     dt_base = tree.DecisionTreeClassifier(**params[INITIAL_DT_TRAIN_PARAMS])
@@ -241,6 +242,6 @@ def deepred(layers_activations, params):
     rt = rt.delete_redundancy()
     if params[VARBOSE] > 2:
         rt.view_graph(filename=params[OUTPUT_DIR] + "Result")
-    params[INF] = inf
+    out_params[INF] = inf
     return rt
 
