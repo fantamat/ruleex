@@ -1,6 +1,6 @@
 # Examples
 
-* Examples of usage of the methods are available in http://fastshare.cz/12522543/ruletree-examples-by-fantamat.rar, 
+* Examples of usage of the methods are available in https://drive.google.com/open?id=18FYoK2hdoq6-3WQOtGzsuzPD2dRBhmuV, 
 where is the code of experiments of my master thesis along with some preprocessed datasets.
 
 * To run the experiment focus on files `__exp.py` and `__exp_cv.py` (cv means crossvalidation).
@@ -8,6 +8,7 @@ Which parameters has to be passes to those scripts is written in comments in the
 
 * File `TaT_gtrain.py` contains calls of the ruleex methods.
 
+* Examples tested 2020-05-19 - additional installation of unidecode and graphviz required, also if you encounter error `ValueError: Object arrays cannot be loaded when allow_pickle=False` reinstall numpy to version 1.16.1.
 
 # FAQ
 
