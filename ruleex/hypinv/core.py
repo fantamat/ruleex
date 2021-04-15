@@ -101,7 +101,7 @@ def find_closest(x1, samples_of_boundary_points, model, model_x1_classification,
         out = None
         while counter < num_loops:
             counter += 1
-            session = strain(model, data, optimizer=tf.train.AdamOptimizer(), num_steps=num_steps, session=session)
+            session = strain(model, data, optimizer=tf.compat.v1.train.AdamOptimizer(), num_steps=num_steps, session=session)
             x0 = model.trained_x
             g = model.get_boundary_gradient(x0, model_x1_classification)
             norm = np.linalg.norm(g)

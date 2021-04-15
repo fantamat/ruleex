@@ -2,4 +2,4 @@ graphviz
 sklearn
 gtrain
 numpy
-tensorflow
+tensorflow==1.15
