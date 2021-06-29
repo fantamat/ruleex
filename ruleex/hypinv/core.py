@@ -37,6 +37,8 @@ DEFAULT_MAX_SLIDING_STEPS = 50
 BOUNDARY_WIDTH = "boundary_width"
 DEFAULT_BOUNDARY_WIDTH = 0.01
 GTRAIN_PARAMS = "gtrain_params"
+MOOVING_STEPS = "mooving_steps"
+DEFAULT_MOOVING_STEPS = 10
 DEFAULT_GTRAIN_PARAMS = {
     "max_fails": 2,
     "num_steps": 1000,
@@ -58,6 +60,7 @@ DEFAULT_PARAMS = {MAX_NUM_RULES: DEFAULT_MAX_NUM_RULES,
                   GTRAIN_PARAMS: DEFAULT_GTRAIN_PARAMS,
                   WEIGHT_BY_CENTER: DEFAULT_WEIGHT_BY_CENTER,
                   MAX_DEPTH: DEFAULT_MAX_DEPTH,
+                  MOOVING_STEPS: DEFAULT_MOOVING_STEPS,
                   }
 
 # INFO key
@@ -114,7 +117,7 @@ def find_closest(x1, samples_of_boundary_points, model, model_x1_classification,
         else:
             return session, out
 
-    session, x0 = return_x_to_boundary([x1], 20, 50, None)
+    session, x0 = return_x_to_boundary([x1], 20, 5*params[MOOVING_STEPS], None)
     g = model.get_boundary_gradient(x0, model_x1_classification)
     norm = np.linalg.norm(g)
     step_points = [x0]
@@ -148,7 +151,7 @@ def find_closest(x1, samples_of_boundary_points, model, model_x1_classification,
         y = model.boundary_eval(x0, model_x1_classification)
         while np.abs(y[0, 0] - 0.5) > params[BOUNDARY_WIDTH]:
             boundary_returns[-1] += 1
-            session, x0_new = return_x_to_boundary(x0, 10, 10, session)
+            session, x0_new = return_x_to_boundary(x0, 10, params[MOOVING_STEPS], session)
             x0 = x0_new
             step_points[-1] = x0
             g = model.get_boundary_gradient(x0, model_x1_classification)

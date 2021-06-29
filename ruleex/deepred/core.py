@@ -80,7 +80,8 @@ def __merge(rt, dt, all_rt_nodes=None):
             pred[root.true_branch] = new_pred[root.true_branch]
         if root.false_branch in new_pred:
             pred[root.false_branch] = new_pred[root.false_branch]
-    if not all_rt_nodes:
+
+    if all_rt_nodes is None:
         all_rt_nodes = rt.get_all_nodes()
     pred = rt.get_predecessor_dict(all_rt_nodes)
     #merge
@@ -88,6 +89,9 @@ def __merge(rt, dt, all_rt_nodes=None):
     for i, rule in enumerate(rts):
         if (rule.i, rule.b) in dt:
             mergeDT(rule)
+
+        else:
+            raise Exception("Not expected to do not have substitution for a node!")
     return rt
 
 
